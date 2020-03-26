@@ -10,6 +10,7 @@ package fnc
 import "os"
 
 // OpenFile opens a file with O_NOATIME flag.
+// For some cases we don't need access time record.
 func OpenFile(path string, flag int, perm os.FileMode) (f *os.File, err error) {
 
 	flag |= O_NOATIME
@@ -44,9 +45,9 @@ func SyncDir(dir string) (err error) {
 }
 
 const (
-	sync_file_range_wait_before = 1
-	sync_file_range_write       = 2
-	sync_file_range_wait_after  = 4
+	syncFileRangeWaitBefore = 1
+	syncFileRangeWrite      = 2
+	syncFileRangeWaitAfter  = 4
 )
 
 // Flush flushes page_cache to disk in sync mode.
@@ -55,7 +56,7 @@ const (
 // so flush it under users' control maybe a better choice in sometime.
 func Flush(f *os.File, offset, size int64) (err error) {
 
-	flags := sync_file_range_wait_before | sync_file_range_write | sync_file_range_wait_after
+	flags := syncFileRangeWaitBefore | syncFileRangeWrite | syncFileRangeWaitAfter
 	return syncRange(f, offset, size, flags)
 }
 
@@ -64,25 +65,25 @@ func Flush(f *os.File, offset, size int64) (err error) {
 // Warn: it can be stalled too in some situations.
 func FlushHint(f *os.File, offset, size int64) (err error) {
 
-	flags := sync_file_range_write
+	flags := syncFileRangeWrite
 	return syncRange(f, offset, size, flags)
 }
 
 const (
-	posix_fadv_random = 1
-	posix_fadv_dontneed = 4
+	posixFadvRandom   = 1
+	posixFadvDontneed = 4
 )
 
 // DropCache drops page_cache in range.
 func DropCache(f *os.File, offset, size int64) (err error) {
 
-	return fadvise(f, offset, size, posix_fadv_dontneed)
+	return fadvise(f, offset, size, posixFadvDontneed)
 }
 
 // DisableReadAhead disables file readahead entirely.
 func DisableReadAhead(f *os.File) (err error) {
 
-	return fadvise(f, 0, 0, posix_fadv_random)
+	return fadvise(f, 0, 0, posixFadvRandom)
 }
 
 // Preallocate allocates space for a new file.
